@@ -121,31 +121,42 @@ function fillChoiceInput(block, targetValue) {
   });
 }
 
-// Handler Tipe Tanggal (Format: M/d/yyyy)
+// Handler Tipe Tanggal (Mendukung format MM/DD/YYYY, <now>, dan memicu popup kalender)
 function fillDateInput(block, value) {
   let dateVal = value;
   
   if (value.toLowerCase() === "<now>") {
     const today = new Date();
-    const mm = today.getMonth() + 1;
-    const dd = today.getDate();
     const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // MM dengan leading zero
+    const dd = String(today.getDate()).padStart(2, '0');     // DD dengan leading zero
     
+    // Format MM/DD/YYYY sesuai standar Ms Forms
     dateVal = `${mm}/${dd}/${yyyy}`;
   }
 
-  const dateInput = block.querySelector('input[data-automation-id="textInput"], input[type="date"], input[type="text"]');
+  // Cari input tanggal atau tombol pemanggil kalender di dalam blok
+  const dateInput = block.querySelector('input[type="text"], input[type="date"], [role="combobox"], button');
+  
   if (dateInput) {
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-    if (nativeInputValueSetter) {
-      nativeInputValueSetter.call(dateInput, dateVal);
-    } else {
-      dateInput.value = dateVal;
-    }
+    // Simulasi klik agar popup kalender interaktif muncul (sesuai ide kamu)
+    dateInput.click();
 
-    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
-    dateInput.dispatchEvent(new Event('blur', { bubbles: true }));
+    setTimeout(() => {
+      const realInput = block.querySelector('input[type="text"], input');
+      if (realInput) {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        if (nativeInputValueSetter) {
+          nativeInputValueSetter.call(realInput, dateVal);
+        } else {
+          realInput.value = dateVal;
+        }
+
+        realInput.dispatchEvent(new Event('input', { bubbles: true }));
+        realInput.dispatchEvent(new Event('change', { bubbles: true }));
+        realInput.dispatchEvent(new Event('blur', { bubbles: true }));
+      }
+    }, 300);
   }
 }
 
