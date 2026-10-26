@@ -1,37 +1,41 @@
-// Mendengarkan pesan dari popup.js saat pengguna berhasil membuat jadwal baru
+// Mendengarkan pesan dari popup.js saat pengguna membuat jadwal baru
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "setAlarm") {
     const { taskName, formUrl, startTime, endTime } = request;
     
-    // Hitung selisih waktu dari sekarang ke Start Time (dalam milidetik ke menit)
-    const delayInMinutes = (new Date(startTime).getTime() - Date.now()) / 60000;
+    const startTimeMs = new Date(startTime).getTime();
+    const endTimeMs = new Date(endTime).getTime();
+    const now = Date.now();
+
+    const delayInMinutes = (startTimeMs - now) / 60000;
 
     if (delayInMinutes > 0) {
-      // Buat alarm berdasarkan nama tugas
+      // Buat alarm untuk waktu mulai (Start Time)
       chrome.alarms.create(taskName, { delayInMinutes: delayInMinutes });
 
-      // Simpan data taskName, formUrl, dan endTime ke chrome.storage.local
+      // Simpan data lengkap ke chrome.storage.local termasuk waktu kedaluwarsa (endTimeMs)
       chrome.storage.local.set({ 
         [taskName]: { 
           name: taskName,
           formUrl: formUrl, 
-          endTime: endTime 
+          startTime: startTimeMs,
+          endTime: endTimeMs 
         } 
       }, () => {
-        console.log(`Alarm "${taskName}" berhasil disetel untuk berjalan pada: ${startTime}`);
+        console.log(`Alarm "${taskName}" berhasil disetel!`);
         sendResponse({ status: "success", message: "Jadwal berhasil disimpan!" });
       });
     } else {
       sendResponse({ status: "error", message: "Waktu mulai sudah terlewat!" });
     }
   } 
-  // Fitur Auto-Delete: Menghapus tugas dari storage & alarms setelah selesai
+  // Menangani pembersihan data (cleanup) secara instan dari content script
   else if (request.action === "cleanupTask") {
     const taskName = request.taskName;
     
     chrome.storage.local.remove(taskName, () => {
       chrome.alarms.clear(taskName, () => {
-        console.log(`Tugas "${taskName}" telah selesai dan dibersihkan secara otomatis.`);
+        console.log(`Data tugas "${taskName}" dibersihkan tuntas.`);
         sendResponse({ status: "success" });
       });
     });
@@ -39,18 +43,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true;
 });
 
-// Menjalankan aksi ketika waktu Start Time tiba
+// Ketika alarm Start Time berbunyi
 chrome.alarms.onAlarm.addListener((alarm) => {
   const taskName = alarm.name;
 
-  // Ambil data URL dan End Time yang tersimpan
   chrome.storage.local.get([taskName], (data) => {
     const taskData = data[taskName];
 
     if (taskData && taskData.formUrl) {
-      // Buka tab baru secara otomatis menuju link Microsoft Forms
+      // Validasi tambahan: Jika saat alarm bunyi ternyata waktu End Time sudah terlewat jauh, 
+      // jangan buka tab-nya, langsung bersihkan saja biar gak jadi bug.
+      if (Date.now() > taskData.endTime + 600000) { // Lebih dari 10 menit lewat
+        console.log(`Tugas "${taskName}" sudah kedaluwarsa total, membersihkan...`);
+        chrome.storage.local.remove(taskName);
+        chrome.alarms.clear(taskName);
+        return;
+      }
+
+      // Buka tab form otomatis
       chrome.tabs.create({ url: taskData.formUrl }, (tab) => {
-        console.log(`Membuka form otomatis untuk tugas: ${taskName}`);
+        console.log(`Membuka form otomatis untuk: ${taskName}`);
       });
     }
   });
