@@ -121,22 +121,28 @@ function fillChoiceInput(block, targetValue) {
   });
 }
 
-// Handler Tipe Tanggal (Format: bulan/tanggal/tahun atau mm/dd/YYYY)
+// Handler Tipe Tanggal (Mendukung format MM/DD/YYYY atau <now> / today)
 function fillDateInput(block, value) {
   let dateVal = value;
   
-  if (value.toLowerCase() === "today") {
+  if (value.toLowerCase() === "today" || value.toLowerCase() === "<now>") {
     const today = new Date();
-    const dd = String(today.getDate()).padStart(2, '0');     // Tanggal (DD)
+    const dd = String(today.getDate()).padStart(2, '0');      // Tanggal (DD)
     const mm = String(today.getMonth() + 1).padStart(2, '0'); // Bulan (MM)
     const yyyy = today.getFullYear();                         // Tahun (YYYY)
     
-    // Format MM/DD/YYYY (bulan/tanggal/tahun)
+    // Format MM/DD/YYYY (bulan/tanggal/tahun) sesuai standar Ms Forms
     dateVal = `${mm}/${dd}/${yyyy}`;
   }
 
-  const dateInput = block.querySelector('input[type="date"], input[type="text"], input[placeholder*="YYYY"], input[placeholder*="yyyy"], input[placeholder*="date"]');
+  // Mengincar elemen input tanggal berdasarkan struktur dateContainer yang tepat
+  const dateInput = block.querySelector('[data-automation-id="dateContainer"] input, input[role="combobox"], input[placeholder*="M/d"]');
+  
   if (dateInput) {
+    // Fokuskan dan klik elemen agar state Office UI Fabric aktif
+    dateInput.focus();
+    dateInput.click();
+
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
     if (nativeInputValueSetter) {
       nativeInputValueSetter.call(dateInput, dateVal);
@@ -144,6 +150,7 @@ function fillDateInput(block, value) {
       dateInput.value = dateVal;
     }
 
+    dateInput.dispatchEvent(new Event('focus', { bubbles: true }));
     dateInput.dispatchEvent(new Event('input', { bubbles: true }));
     dateInput.dispatchEvent(new Event('change', { bubbles: true }));
     dateInput.dispatchEvent(new Event('blur', { bubbles: true }));
