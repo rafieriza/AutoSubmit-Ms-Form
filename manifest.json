@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "AutoSubmit Ms Form",
+  "version": "1.0",
+  "description": "Ekstensi browser untuk menjadwalkan dan melakukan auto-submit pada Microsoft Forms.",
+  "permissions": [
+    "tabs",
+    "alarms",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://forms.cloud.microsoft/*",
+    "https://forms.office.com/*",
+    "https://*.office.com/*",
+    "https://*.office365.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
