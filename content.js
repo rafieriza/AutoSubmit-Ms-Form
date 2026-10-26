@@ -43,7 +43,7 @@ function initAutoFillAndTimer() {
       }
     }
 
-    // 3. Jalankan Floating Timer untuk hitung mundur Auto-Submit
+    // 3. Jalankan Floating Timer untuk hitung mundur Auto-Submit (membawa nama tugas)
     if (activeTask.endTime) {
       const targetEnd = new Date(activeTask.endTime).getTime();
       createFloatingTimer(targetEnd, activeTask.name);
@@ -84,7 +84,7 @@ function executeAutofill(rules) {
   });
 }
 
-// Handler Tipe Teks (Menggunakan selector spesifik data-automation-id="textInput")
+// Handler Tipe Teks (Nama & NIM)
 function fillTextInput(block, value) {
   const inputEl = block.querySelector('input[data-automation-id="textInput"], textarea');
   if (inputEl) {
@@ -128,18 +128,15 @@ function fillDateInput(block, value) {
   if (value.toLowerCase() === "<now>") {
     const today = new Date();
     const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0'); // MM dengan leading zero
-    const dd = String(today.getDate()).padStart(2, '0');     // DD dengan leading zero
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
     
-    // Format MM/DD/YYYY sesuai standar Ms Forms
     dateVal = `${mm}/${dd}/${yyyy}`;
   }
 
-  // Cari input tanggal atau tombol pemanggil kalender di dalam blok
   const dateInput = block.querySelector('input[type="text"], input[type="date"], [role="combobox"], button');
   
   if (dateInput) {
-    // Simulasi klik agar popup kalender interaktif muncul (sesuai ide kamu)
     dateInput.click();
 
     setTimeout(() => {
@@ -180,10 +177,13 @@ function createFloatingTimer(targetEndTime, taskName) {
     font-family: Arial, sans-serif;
     text-align: center;
     border: 2px solid #0078d4;
+    max-width: 220px;
   `;
 
+  // Menambahkan elemen nama tugas di bawah judul timer
   timerBox.innerHTML = `
-    <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #333;">Auto-Submit Timer</div>
+    <div style="font-weight: bold; font-size: 14px; color: #333;">Auto-Submit Timer</div>
+    <div style="font-size: 12px; color: #0078d4; font-weight: bold; margin: 3px 0 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${taskName || 'Tugas Form'}">${taskName || 'Tugas Form'}</div>
     <div id="countdownDisplay" style="font-size: 16px; font-weight: bold; color: #d9534f; margin-bottom: 8px;">00:00:00</div>
     <div>
       <button id="stopTimerBtn" style="background: #d9534f; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">STOP</button>
