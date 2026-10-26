@@ -1,357 +1,228 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const homeView = document.getElementById('homeView');
-  const projectsView = document.getElementById('projectsView');
-  const alarmsView = document.getElementById('alarmsView');
-  
+  // --- NAVIGASI TAB ---
   const navHome = document.getElementById('navHome');
   const navProjects = document.getElementById('navProjects');
   const navAlarms = document.getElementById('navAlarms');
-  
-  // Element Home Form
-  const formName = document.getElementById('formName');
-  const formUrl = document.getElementById('formUrl');
-  const selectedProject = document.getElementById('selectedProject');
-  const startTime = document.getElementById('startTime');
-  const endTime = document.getElementById('endTime');
-  const submitBtn = document.getElementById('submitBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  
-  // Element Projects
-  const projectListView = document.getElementById('projectListView');
-  const projectEditorView = document.getElementById('projectEditorView');
-  const projectList = document.getElementById('projectList');
-  const newProjectBtn = document.getElementById('newProjectBtn');
-  const backToProjectsBtn = document.getElementById('backToProjectsBtn');
-  const editProjectName = document.getElementById('editProjectName');
-  const rulesContainer = document.getElementById('rulesContainer');
-  const addRuleBtn = document.getElementById('addRuleBtn');
-  const saveProjectBtn = document.getElementById('saveProjectBtn');
-  
-  // Element Alarms
-  const alarmList = document.getElementById('alarmList');
 
-  let currentEditingProject = null;
+  const tabHome = document.getElementById('tabHome');
+  const tabProjects = document.getElementById('tabProjects');
+  const tabAlarms = document.getElementById('tabAlarms');
 
-  // ==========================================
-  // 1. NAVIGASI 3 TAB
-  // ==========================================
-  function switchTab(target) {
-    homeView.style.display = 'none';
-    projectsView.style.display = 'none';
-    alarmsView.style.display = 'none';
-    
-    navHome.classList.remove('active');
-    navProjects.classList.remove('active');
-    navAlarms.classList.remove('active');
+  function switchTab(activeTab, activeContent) {
+    [navHome, navProjects, navAlarms].forEach(n => n.classList.remove('active'));
+    [tabHome, tabProjects, tabAlarms].forEach(c => c.classList.remove('active'));
 
-    if (target === 'home') {
-      homeView.style.display = 'block';
-      navHome.classList.add('active');
-      loadProjectsDropdown();
-    } else if (target === 'projects') {
-      projectsView.style.display = 'block';
-      navProjects.classList.add('active');
-      projectListView.style.display = 'block';
-      projectEditorView.style.display = 'none';
-      loadProjectList();
-    } else if (target === 'alarms') {
-      alarmsView.style.display = 'block';
-      navAlarms.classList.add('active');
-      loadAlarmList();
-    }
+    activeTab.classList.add('active');
+    activeContent.classList.add('active');
+
+    if (activeContent === tabHome) loadProjectDropdown();
+    if (activeContent === tabProjects) loadProjectList();
+    if (activeContent === tabAlarms) loadAlarmsList();
   }
 
-  navHome.addEventListener('click', () => switchTab('home'));
-  navProjects.addEventListener('click', () => switchTab('projects'));
-  navAlarms.addEventListener('click', () => switchTab('alarms'));
+  navHome.addEventListener('click', () => switchTab(navHome, tabHome));
+  navProjects.addEventListener('click', () => switchTab(navProjects, tabProjects));
+  navAlarms.addEventListener('click', () => switchTab(navAlarms, tabAlarms));
 
-  // ==========================================
-  // 2. VALIDASI WAKTU REAL-TIME (Garis Merah)
-  // ==========================================
-  function validateTime() {
-    const now = new Date().getTime();
-    const startVal = new Date(startTime.value).getTime();
-    const endVal = new Date(endTime.value).getTime();
+  // --- HOME / JADWAL FORM ---
+  const taskForm = document.getElementById('taskForm');
+  const projectSelect = document.getElementById('selectedProject');
 
-    let isValid = true;
-
-    if (startTime.value && startVal <= now) {
-      startTime.classList.add('error-border');
-      isValid = false;
-    } else {
-      startTime.classList.remove('error-border');
-    }
-
-    if (startTime.value && endTime.value && endVal <= startVal) {
-      endTime.classList.add('error-border');
-      isValid = false;
-    } else {
-      endTime.classList.remove('error-border');
-    }
-
-    return isValid && formName.value.trim() !== '' && formUrl.value.trim() !== '';
+  function loadProjectDropdown() {
+    chrome.storage.local.get(['projects'], (data) => {
+      const projects = data.projects || {};
+      projectSelect.innerHTML = '<option value="">-- Tanpa Project (Manual) --</option>';
+      
+      Object.keys(projects).forEach(projName => {
+        const opt = document.createElement('option');
+        opt.value = projName;
+        opt.textContent = projName;
+        projectSelect.appendChild(opt);
+      });
+    });
   }
 
-  startTime.addEventListener('input', validateTime);
-  endTime.addEventListener('input', validateTime);
-  formName.addEventListener('input', validateTime);
-  formUrl.addEventListener('input', validateTime);
+  taskForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const taskName = document.getElementById('taskName').value.trim();
+    const formUrl = document.getElementById('formUrl').value.trim();
+    const selectedProject = projectSelect.value;
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
 
-  // Tombol Submit Jadwal (Home)
-  submitBtn.addEventListener('click', () => {
-    if (!validateTime()) {
-      alert('Mohon isi form dengan benar dan pastikan waktu tidak kedaluwarsa!');
+    if (!taskName || !formUrl || !startTime || !endTime) {
+      alert("Semua field wajib diisi!");
       return;
     }
 
-    const taskName = formName.value.trim();
-    const url = formUrl.value.trim();
-    const proj = selectedProject.value;
-    const start = startTime.value;
-    const end = endTime.value;
-
     chrome.runtime.sendMessage({
       action: "setAlarm",
-      taskName: taskName,
-      formUrl: url,
-      selectedProject: proj,
-      startTime: start,
-      endTime: end
+      taskName,
+      formUrl,
+      selectedProject,
+      startTime,
+      endTime
     }, (response) => {
       if (response && response.status === "success") {
-        alert('Jadwal Auto-Submit berhasil disimpan!');
-        formName.value = '';
-        formUrl.value = '';
-        selectedProject.value = '';
-        startTime.value = '';
-        endTime.value = '';
-        switchTab('alarms');
+        alert(response.message);
+        taskForm.reset();
+        switchTab(navAlarms, tabAlarms);
       } else {
-        alert('Gagal menyimpan jadwal: ' + (response ? response.message : 'Unknown error'));
+        alert(response?.message || "Gagal menyetel alarm.");
       }
     });
   });
 
-  resetBtn.addEventListener('click', () => {
-    formName.value = '';
-    formUrl.value = '';
-    selectedProject.value = '';
-    startTime.value = '';
-    endTime.value = '';
-    startTime.classList.remove('error-border');
-    endTime.classList.remove('error-border');
-  });
+  // --- PROJECTS MANAGEMENT ---
+  const saveProjectBtn = document.getElementById('saveProjectBtn');
+  const addRuleBtn = document.getElementById('addRuleBtn');
+  const rulesContainer = document.getElementById('rulesContainer');
+  const existingProjectsList = document.getElementById('existingProjectsList');
+  const newProjectNameInput = document.getElementById('newProjectName');
 
-  // ==========================================
-  // 3. MANAJEMEN TAB PROJECTS & RULES
-  // ==========================================
-  function loadProjectsDropdown() {
-    chrome.storage.local.get(["projects"], (data) => {
-      const projects = data.projects || {};
-      selectedProject.innerHTML = '<option value="">-- Tanpa Autofill (Manual) --</option>';
-      for (let pName in projects) {
-        let opt = document.createElement('option');
-        opt.value = pName;
-        opt.textContent = pName;
-        selectedProject.appendChild(opt);
-      }
-    });
-  }
+  addRuleBtn.addEventListener('click', () => addRuleRow());
 
-  function loadProjectList() {
-    chrome.storage.local.get(["projects"], (data) => {
-      const projects = data.projects || {};
-      projectList.innerHTML = '';
-      const keys = Object.keys(projects);
-
-      if (keys.length === 0) {
-        projectList.innerHTML = '<p class="no-data">Belum ada project autofill.</p>';
-        return;
-      }
-
-      keys.forEach((pName) => {
-        const ruleCount = projects[pName].rules ? projects[pName].rules.length : 0;
-        const div = document.createElement('div');
-        div.className = 'card-item';
-        div.innerHTML = `
-          <div class="card-info">
-            <p class="card-title">📁 ${pName}</p>
-            <p class="card-subtitle">Jumlah Rules: ${ruleCount}</p>
-          </div>
-          <div>
-            <button class="edit-btn" data-name="${pName}">Edit</button>
-            <button class="delete-btn" data-del="${pName}">🗑️</button>
-          </div>
-        `;
-        projectList.appendChild(div);
-      });
-
-      // Tombol Edit Project
-      document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const name = e.target.getAttribute('data-name');
-          openProjectEditor(name);
-        });
-      });
-
-      // Tombol Hapus Project
-      document.querySelectorAll('.delete-btn[data-del]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const name = e.target.getAttribute('data-del');
-          if (confirm(`Yakin ingin menghapus project "${name}"?`)) {
-            delete projects[name];
-            chrome.storage.local.set({ projects }, () => {
-              loadProjectList();
-            });
-          }
-        });
-      });
-    });
-  }
-
-  newProjectBtn.addEventListener('click', () => {
-    const pName = prompt("Masukkan nama project baru (contoh: Absensi Kuliah):");
-    if (!pName) return;
-
-    chrome.storage.local.get(["projects"], (data) => {
-      const projects = data.projects || {};
-      if (projects[pName]) {
-        alert("Nama project sudah ada!");
-        return;
-      }
-      projects[pName] = { rules: [] };
-      chrome.storage.local.set({ projects }, () => {
-        openProjectEditor(pName);
-      });
-    });
-  });
-
-  function openProjectEditor(pName) {
-    currentEditingProject = pName;
-    projectListView.style.display = 'none';
-    projectEditorView.style.display = 'block';
-    editProjectName.value = pName;
-
-    chrome.storage.local.get(["projects"], (data) => {
-      const projects = data.projects || {};
-      const rules = (projects[pName] && projects[pName].rules) ? projects[pName].rules : [];
-      renderRules(rules);
-    });
-  }
-
-  backToProjectsBtn.addEventListener('click', () => {
-    currentEditingProject = null;
-    projectEditorView.style.display = 'none';
-    projectListView.style.display = 'block';
-    loadProjectList();
-  });
-
-  function renderRules(rules) {
-    rulesContainer.innerHTML = '';
-    rules.forEach((rule, index) => {
-      const row = document.createElement('div');
-      row.className = 'rule-row';
-      row.innerHTML = `
-        <select class="rule-type">
-          <option value="Text" ${rule.type === 'Text' ? 'selected' : ''}>Text</option>
-          <option value="Choice" ${rule.type === 'Choice' ? 'selected' : ''}>Choice</option>
-          <option value="Date" ${rule.type === 'Date' ? 'selected' : ''}>Date</option>
-        </select>
-        <input type="text" class="rule-q" placeholder="Pertanyaan" value="${rule.question || ''}">
-        <input type="text" class="rule-v" placeholder="Jawaban" value="${rule.value || ''}">
-        <button class="delete-btn" onclick="this.parentElement.remove()" style="font-size:12px;">❌</button>
-      `;
-      rulesContainer.appendChild(row);
-    });
-  }
-
-  addRuleBtn.addEventListener('click', () => {
+  function addRuleRow(type = "Text", question = "", value = "") {
     const row = document.createElement('div');
     row.className = 'rule-row';
+    row.style.cssText = "display: flex; gap: 8px; margin-bottom: 8px; align-items: center;";
+
     row.innerHTML = `
-      <select class="rule-type">
-        <option value="Text">Text</option>
-        <option value="Choice">Choice</option>
-        <option value="Date">Date</option>
+      <select class="rule-type" style="flex: 1; padding: 6px;">
+        <option value="Text" ${type === 'Text' ? 'selected' : ''}>Text</option>
+        <option value="Choice" ${type === 'Choice' ? 'selected' : ''}>Choice</option>
+        <option value="Date" ${type === 'Date' ? 'selected' : ''}>Date</option>
       </select>
-      <input type="text" class="rule-q" placeholder="Pertanyaan">
-      <input type="text" class="rule-v" placeholder="Jawaban">
-      <button class="delete-btn" onclick="this.parentElement.remove()" style="font-size:12px;">❌</button>
+      <input type="text" class="rule-question" placeholder="Title Question" value="${question}" style="flex: 2; padding: 6px;">
+      <input type="text" class="rule-value" placeholder="Value or <now>" value="${value}" style="flex: 2; padding: 6px;">
+      <button type="button" class="delete-rule-btn" style="background: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;">-</button>
     `;
+
+    row.querySelector('.delete-rule-btn').addEventListener('click', () => row.remove());
     rulesContainer.appendChild(row);
-  });
+  }
 
   saveProjectBtn.addEventListener('click', () => {
-    if (!currentEditingProject) return;
+    const projectName = newProjectNameInput.value.trim();
+    if (!projectName) {
+      alert("Nama project wajib diisi!");
+      return;
+    }
 
     const rows = rulesContainer.querySelectorAll('.rule-row');
-    const newRules = [];
+    const rules = [];
 
-    rows.forEach(row => {
-      const type = row.querySelector('.rule-type').value;
-      const question = row.querySelector('.rule-q').value.trim();
-      const value = row.querySelector('.rule-v').value.trim();
-
-      if (question && value) {
-        newRules.push({ type, question, value });
-      }
+    rows.forEach(r => {
+      rules.push({
+        type: r.querySelector('.rule-type').value,
+        question: r.querySelector('.rule-question').value.trim(),
+        value: r.querySelector('.rule-value').value.trim()
+      });
     });
 
-    chrome.storage.local.get(["projects"], (data) => {
+    chrome.storage.local.get(['projects'], (data) => {
       const projects = data.projects || {};
-      if (projects[currentEditingProject]) {
-        projects[currentEditingProject].rules = newRules;
-        chrome.storage.local.set({ projects }, () => {
-          alert("Project berhasil disimpan!");
-          backToProjectsBtn.loadProjectList; // kembali
-          switchTab('projects');
-        });
-      }
+      projects[projectName] = { rules };
+
+      chrome.storage.local.set({ projects }, () => {
+        alert(`Project "${projectName}" berhasil disimpan!`);
+        newProjectNameInput.value = '';
+        rulesContainer.innerHTML = '';
+        loadProjectList();
+      });
     });
   });
 
-  // ==========================================
-  // 4. MANAJEMEN TAB ALARMS
-  // ==========================================
-  function loadAlarmList() {
-    chrome.storage.local.get(null, (items) => {
-      alarmList.innerHTML = '';
-      
-      const keys = Object.keys(items).filter(k => k !== 'projects' && items[k] && items[k].endTime);
+  function loadProjectList() {
+    chrome.storage.local.get(['projects'], (data) => {
+      const projects = data.projects || {};
+      existingProjectsList.innerHTML = '';
 
-      if (keys.length === 0) {
-        alarmList.innerHTML = '<p class="no-data">Belum ada alarm tersimpan.</p>';
+      if (Object.keys(projects).length === 0) {
+        existingProjectsList.innerHTML = '<p style="color: #666; font-size: 13px;">Belum ada project tersimpan.</p>';
         return;
       }
 
-      keys.forEach((key) => {
-        const data = items[key];
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'card-item';
+      Object.keys(projects).forEach(projName => {
+        const div = document.createElement('div');
+        div.style.cssText = "background: #f9f9f9; border: 1px solid #ddd; padding: 8px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;";
         
-        itemDiv.innerHTML = `
-          <div class="card-info">
-            <p class="card-title">⏰ ${key}</p>
-            <p class="card-subtitle">Batas: ${new Date(data.endTime).toLocaleString()}</p>
-            ${data.selectedProject ? `<p class="card-subtitle" style="color:#0078d4;">Project: ${data.selectedProject}</p>` : ''}
+        div.innerHTML = `
+          <div>
+            <strong>${projName}</strong> (${projects[projName].rules.length} rules)
           </div>
-          <button class="delete-btn" data-name="${key}">🗑️</button>
+          <button class="del-proj" data-name="${projName}" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">Hapus</button>
         `;
 
-        alarmList.appendChild(itemDiv);
-      });
-
-      document.querySelectorAll('.delete-btn[data-name]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const nameToDelete = e.target.getAttribute('data-name');
-          chrome.runtime.sendMessage({ action: "cleanupTask", taskName: nameToDelete }, () => {
-            loadAlarmList();
-          });
+        div.querySelector('.del-proj').addEventListener('click', () => {
+          if (confirm(`Hapus project "${projName}"?`)) {
+            delete projects[projName];
+            chrome.storage.local.set({ projects }, () => loadProjectList());
+          }
         });
+
+        existingProjectsList.appendChild(div);
       });
     });
   }
 
-  // Load awal dropdown saat popup dibuka
-  loadProjectsDropdown();
+  // --- ALARMS LIST (Diperbarui menampilkan Start & End Time) ---
+  const alarmsListContainer = document.getElementById('alarmsList');
+
+  function loadAlarmsList() {
+    chrome.storage.local.get(null, (items) => {
+      alarmsListContainer.innerHTML = '';
+      let hasAlarm = false;
+
+      Object.keys(items).forEach(key => {
+        if (key === 'projects') return;
+        const task = items[key];
+
+        if (task && task.endTime) {
+          hasAlarm = true;
+          const card = document.createElement('div');
+          card.className = 'alarm-card';
+          card.style.cssText = "background: #fff; border: 1px solid #ddd; border-left: 4px solid #0078d4; padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
+
+          // Format waktu mulai dan berakhir agar mudah dibaca
+          const formatDateTime = (ms) => {
+            if (!ms) return '-';
+            const d = new Date(ms);
+            const dateStr = d.toLocaleDateString('id-ID');
+            const timeStr = d.toTimeString().split(' ')[0];
+            return `${dateStr}, ${timeStr}`;
+          };
+
+          const startFormatted = formatDateTime(task.startTime);
+          const endFormatted = formatDateTime(task.endTime);
+
+          card.innerHTML = `
+            <div>
+              <div style="font-weight: bold; color: #333; font-size: 14px;">⏰ ${task.name}</div>
+              <div style="font-size: 12px; color: #555; margin-top: 3px;"><strong>Mulai:</strong> ${startFormatted}</div>
+              <div style="font-size: 12px; color: #d9534f; margin-top: 1px;"><strong>Berakhir:</strong> ${endFormatted}</div>
+              <div style="font-size: 12px; color: #0078d4; margin-top: 3px;">Project: ${task.selectedProject || 'Manual'}</div>
+            </div>
+            <button class="delete-task-btn" data-name="${task.name}" style="background: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;">🗑️</button>
+          `;
+
+          card.querySelector('.delete-task-btn').addEventListener('click', () => {
+            const taskName = task.name;
+            chrome.runtime.sendMessage({ action: "cleanupTask", taskName }, () => {
+              loadAlarmsList();
+            });
+          });
+
+          alarmsListContainer.appendChild(card);
+        }
+      });
+
+      if (!hasAlarm) {
+        alarmsListContainer.innerHTML = '<p style="color: #666; font-size: 13px; text-align: center;">Tidak ada jadwal alarm aktif.</p>';
+      }
+    });
+  }
+
+  // Initial load
+  loadProjectDropdown();
 });
