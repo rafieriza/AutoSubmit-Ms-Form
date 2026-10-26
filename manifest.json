@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AutoSubmit Ms Form",
   "version": "1.0",
-  "description": "Ekstensi browser untuk menjadwalkan dan melakukan auto-submit pada Microsoft Forms.",
+  "description": "Ekstensi browser untuk menjadwalkan, auto-submit, dan autofill pada Microsoft Forms.",
   "permissions": [
     "tabs",
     "alarms",
