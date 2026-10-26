@@ -20,7 +20,8 @@
         "https://forms.cloud.microsoft/*",
         "https://forms.office.com/*"
       ],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "run_at": "document_idle"
     }
   ],
   "action": {
