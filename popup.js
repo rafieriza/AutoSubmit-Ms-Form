@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- ALARMS LIST (Diperbarui menampilkan Start & End Time) ---
+  // --- ALARMS LIST ---
   const alarmsListContainer = document.getElementById('alarmsList');
 
   function loadAlarmsList() {
@@ -184,7 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
           card.className = 'alarm-card';
           card.style.cssText = "background: #fff; border: 1px solid #ddd; border-left: 4px solid #0078d4; padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
 
-          // Format waktu mulai dan berakhir agar mudah dibaca
           const formatDateTime = (ms) => {
             if (!ms) return '-';
             const d = new Date(ms);
@@ -223,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Initial load
+  // Load awal saat popup dibuka
   loadProjectDropdown();
+  loadAlarmsList();
 });
