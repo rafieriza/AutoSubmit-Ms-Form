@@ -1,13 +1,25 @@
-// Mendengarkan data End Time yang dikirim dari background/popup saat tab terbuka
+// Cek data tugas yang tersimpan saat halaman Microsoft Forms terbuka
 chrome.storage.local.get(null, (items) => {
-  // Cari data tugas yang cocok dengan URL halaman saat ini
   const currentUrl = window.location.href;
   let activeTask = null;
 
+  // Cari tugas yang URL-nya cocok dengan tab yang sedang dibuka
   for (let key in items) {
-    if (items[key] && items[key].formUrl && currentUrl.includes(items[key].formUrl)) {
-      activeTask = items[key];
-      break;
+    if (items[key] && items[key].formUrl) {
+      // Ambil domain dasar atau kecocokan link
+      if (currentUrl.includes(items[key].formUrl) || items[key].formUrl.includes(currentUrl)) {
+        activeTask = items[key];
+        break;
+      }
+    }
+  }
+
+  // Jika tidak ketemu lewat kecocokan teks persis, ambil tugas terbaru yang tersimpan
+  if (!activeTask) {
+    const keys = Object.keys(items).filter(k => items[k] && items[k].endTime);
+    if (keys.length > 0) {
+      // Ambil tugas terakhir yang dibuat
+      activeTask = items[keys[keys.length - 1]];
     }
   }
 
@@ -17,7 +29,9 @@ chrome.storage.local.get(null, (items) => {
 });
 
 function createFloatingTimer(targetEndTime) {
-  // Buat elemen kotak timer di pojok kiri atas
+  // Cegah duplikasi timer jika sudah ada
+  if (document.getElementById('autoSubmitTimerBox')) return;
+
   const timerBox = document.createElement('div');
   timerBox.id = 'autoSubmitTimerBox';
   timerBox.style.cssText = `
@@ -28,18 +42,17 @@ function createFloatingTimer(targetEndTime) {
     background: white;
     padding: 10px 15px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     font-family: Arial, sans-serif;
     text-align: center;
     border: 2px solid #0078d4;
   `;
 
   timerBox.innerHTML = `
-    <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #333;">Timer</div>
+    <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #333;">Auto-Submit Timer</div>
     <div id="countdownDisplay" style="font-size: 16px; font-weight: bold; color: #d9534f; margin-bottom: 8px;">00:00:00</div>
     <div>
-      <button id="stopTimerBtn" style="background: #d9534f; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;">STOP</button>
-      <button id="addTimerBtn" style="background: #0078d4; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">ADD</button>
+      <button id="stopTimerBtn" style="background: #d9534f; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">STOP</button>
     </div>
   `;
 
@@ -47,7 +60,6 @@ function createFloatingTimer(targetEndTime) {
 
   const display = document.getElementById('countdownDisplay');
 
-  // Jalankan hitung mundur setiap detik
   const interval = setInterval(() => {
     const now = Date.now();
     const distance = targetEndTime - now;
@@ -69,24 +81,17 @@ function createFloatingTimer(targetEndTime) {
       String(seconds).padStart(2, '0');
   }, 1000);
 
-  // Tombol STOP untuk menghapus timer
   document.getElementById('stopTimerBtn').addEventListener('click', () => {
     clearInterval(interval);
     timerBox.remove();
   });
-
-  // Tombol ADD untuk menambah waktu 1 menit (opsional)
-  document.getElementById('addTimerBtn').addEventListener('click', () => {
-    targetEndTime += 60000;
-  });
 }
 
-// Fungsi otomatis mencari dan mengeklik tombol Kirim / Submit Microsoft Forms
 function triggerSubmit() {
-  // Strategi 1: Cari berdasarkan data-automation-id
+  // Strategi 1: Cari berdasarkan atribut khusus Microsoft Forms
   let submitBtn = document.querySelector('button[data-automation-id="submitButton"]');
 
-  // Strategi 2: Cari manual berdasarkan teks tombol "Kirim" atau "Submit"
+  // Strategi 2: Cari manual dari teks tombol "Kirim" atau "Submit"
   if (!submitBtn) {
     const buttons = document.querySelectorAll('button');
     for (let btn of buttons) {
@@ -101,6 +106,6 @@ function triggerSubmit() {
     submitBtn.click();
     console.log("Auto-submit berhasil dieksekusi!");
   } else {
-    console.log("Tombol submit tidak ditemukan di halaman ini.");
+    console.log("Tombol submit tidak ditemukan.");
   }
 }
