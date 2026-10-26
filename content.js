@@ -22,7 +22,6 @@ function initAutoFillAndTimer() {
       }
     }
 
-    // Fallback jika URL tidak cocok persis tapi ada tugas tersimpan
     if (!activeTask) {
       const keys = Object.keys(items).filter(k => k !== 'projects' && items[k] && items[k].endTime);
       if (keys.length > 0) {
@@ -40,7 +39,7 @@ function initAutoFillAndTimer() {
 
       if (projectData && projectData.rules && projectData.rules.length > 0) {
         console.log(`[Autofill] Menjalankan autofill untuk project: "${selectedProjectName}"`);
-        executeAutofill(projectData.rules);
+        setTimeout(() => executeAutofill(projectData.rules), 800);
       }
     }
 
@@ -85,13 +84,24 @@ function executeAutofill(rules) {
   });
 }
 
-// Handler Tipe Teks
+// Handler Tipe Teks (Bypass React State)
 function fillTextInput(block, value) {
   const inputEl = block.querySelector('input[type="text"], textarea');
   if (inputEl) {
-    inputEl.value = value;
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    const nativeTextareaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
+
+    if (inputEl.tagName === 'TEXTAREA' && nativeTextareaValueSetter) {
+      nativeTextareaValueSetter.call(inputEl, value);
+    } else if (nativeInputValueSetter) {
+      nativeInputValueSetter.call(inputEl, value);
+    } else {
+      inputEl.value = value;
+    }
+
     inputEl.dispatchEvent(new Event('input', { bubbles: true }));
     inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+    inputEl.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 }
 
@@ -111,23 +121,32 @@ function fillChoiceInput(block, targetValue) {
   });
 }
 
-// Handler Tipe Tanggal
+// Handler Tipe Tanggal (Format: tanggal/bulan/tahun atau DD/MM/YYYY)
 function fillDateInput(block, value) {
   let dateVal = value;
   
   if (value.toLowerCase() === "<now>") {
     const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    dateVal = `${yyyy}-${mm}-${dd}`;
+    const dd = String(today.getDate()).padStart(2, '0');     // Tanggal (DD)
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Bulan (MM)
+    const yyyy = today.getFullYear();                         // Tahun (YYYY)
+    
+    // Format DD/MM/YYYY (tanggal/bulan/tahun)
+    dateVal = `${dd}/${mm}/${yyyy}`;
   }
 
-  const dateInput = block.querySelector('input[type="date"], input[placeholder*="YYYY"], input[placeholder*="yyyy"]');
+  const dateInput = block.querySelector('input[type="date"], input[type="text"], input[placeholder*="YYYY"], input[placeholder*="yyyy"], input[placeholder*="date"]');
   if (dateInput) {
-    dateInput.value = dateVal;
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    if (nativeInputValueSetter) {
+      nativeInputValueSetter.call(dateInput, dateVal);
+    } else {
+      dateInput.value = dateVal;
+    }
+
     dateInput.dispatchEvent(new Event('input', { bubbles: true }));
     dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+    dateInput.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 }
 
