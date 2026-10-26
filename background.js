@@ -10,9 +10,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Buat alarm berdasarkan nama tugas
       chrome.alarms.create(taskName, { delayInMinutes: delayInMinutes });
 
-      // Simpan data formUrl dan endTime ke chrome.storage.local agar bisa diakses nanti
+      // Simpan data taskName, formUrl, dan endTime ke chrome.storage.local
       chrome.storage.local.set({ 
         [taskName]: { 
+          name: taskName,
           formUrl: formUrl, 
           endTime: endTime 
         } 
@@ -23,6 +24,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else {
       sendResponse({ status: "error", message: "Waktu mulai sudah terlewat!" });
     }
+  } 
+  // Fitur Auto-Delete: Menghapus tugas dari storage & alarms setelah selesai
+  else if (request.action === "cleanupTask") {
+    const taskName = request.taskName;
+    
+    chrome.storage.local.remove(taskName, () => {
+      chrome.alarms.clear(taskName, () => {
+        console.log(`Tugas "${taskName}" telah selesai dan dibersihkan secara otomatis.`);
+        sendResponse({ status: "success" });
+      });
+    });
   }
   return true;
 });
@@ -39,9 +51,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
       // Buka tab baru secara otomatis menuju link Microsoft Forms
       chrome.tabs.create({ url: taskData.formUrl }, (tab) => {
         console.log(`Membuka form otomatis untuk tugas: ${taskName}`);
-        
-        // Di sini nanti kita bisa mengirim data End Time ke tab tersebut 
-        // untuk memunculkan Floating Timer dan menjalankan Auto-Submit
       });
     }
   });
