@@ -121,21 +121,21 @@ function fillChoiceInput(block, targetValue) {
   });
 }
 
-// Handler Tipe Tanggal (Format: tanggal/bulan/tahun atau DD/MM/YYYY)
+// Handler Tipe Tanggal (Format: M/d/yyyy - Standar Ms Forms tanpa leading zero)
 function fillDateInput(block, value) {
   let dateVal = value;
   
   if (value.toLowerCase() === "<now>") {
     const today = new Date();
-    const dd = String(today.getDate()).padStart(2, '0');     // Tanggal (DD)
-    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Bulan (MM)
-    const yyyy = today.getFullYear();                         // Tahun (YYYY)
+    const mm = today.getMonth() + 1;    // Bulan (M tanpa nol di depan)
+    const dd = today.getDate();       // Tanggal (d tanpa nol di depan)
+    const yyyy = today.getFullYear();   // Tahun (yyyy)
     
-    // Format DD/MM/YYYY (tanggal/bulan/tahun)
-    dateVal = `${dd}/${mm}/${yyyy}`;
+    // Format M/d/yyyy (contoh: 10/26/2026)
+    dateVal = `${mm}/${dd}/${yyyy}`;
   }
 
-  const dateInput = block.querySelector('input[type="date"], input[type="text"], input[placeholder*="YYYY"], input[placeholder*="yyyy"], input[placeholder*="date"]');
+  const dateInput = block.querySelector('input[type="date"], input[type="text"], input[placeholder*="YYYY"], input[placeholder*="yyyy"], input[placeholder*="M"]');
   if (dateInput) {
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
     if (nativeInputValueSetter) {
