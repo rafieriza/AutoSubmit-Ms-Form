@@ -121,7 +121,7 @@ function fillChoiceInput(block, targetValue) {
   });
 }
 
-// Handler Tipe Tanggal (Mendukung format MM/DD/YYYY, <now>, dan memicu popup kalender)
+// Handler Tipe Tanggal (Mendukung format MM/DD/YYYY dan tag <now>)
 function fillDateInput(block, value) {
   let dateVal = value;
   
@@ -134,26 +134,20 @@ function fillDateInput(block, value) {
     dateVal = `${mm}/${dd}/${yyyy}`;
   }
 
-  const dateInput = block.querySelector('input[type="text"], input[type="date"], [role="combobox"], button');
+  // Mengincar elemen input di dalam blok tanggal (tanpa memicu tombol lain)
+  const dateInput = block.querySelector('input');
   
   if (dateInput) {
-    dateInput.click();
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    if (nativeInputValueSetter) {
+      nativeInputValueSetter.call(dateInput, dateVal);
+    } else {
+      dateInput.value = dateVal;
+    }
 
-    setTimeout(() => {
-      const realInput = block.querySelector('input[type="text"], input');
-      if (realInput) {
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-        if (nativeInputValueSetter) {
-          nativeInputValueSetter.call(realInput, dateVal);
-        } else {
-          realInput.value = dateVal;
-        }
-
-        realInput.dispatchEvent(new Event('input', { bubbles: true }));
-        realInput.dispatchEvent(new Event('change', { bubbles: true }));
-        realInput.dispatchEvent(new Event('blur', { bubbles: true }));
-      }
-    }, 300);
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+    dateInput.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 }
 
