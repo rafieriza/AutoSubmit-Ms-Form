@@ -6,7 +6,6 @@ chrome.storage.local.get(null, (items) => {
   // Cari tugas yang URL-nya cocok dengan tab yang sedang dibuka
   for (let key in items) {
     if (items[key] && items[key].formUrl) {
-      // Ambil domain dasar atau kecocokan link
       if (currentUrl.includes(items[key].formUrl) || items[key].formUrl.includes(currentUrl)) {
         activeTask = items[key];
         break;
@@ -14,21 +13,20 @@ chrome.storage.local.get(null, (items) => {
     }
   }
 
-  // Jika tidak ketemu lewat kecocokan teks persis, ambil tugas terbaru yang tersimpan
+  // Fallback: Jika tidak ketemu persis, ambil tugas terakhir yang tersimpan
   if (!activeTask) {
     const keys = Object.keys(items).filter(k => items[k] && items[k].endTime);
     if (keys.length > 0) {
-      // Ambil tugas terakhir yang dibuat
       activeTask = items[keys[keys.length - 1]];
     }
   }
 
   if (activeTask && activeTask.endTime) {
-    createFloatingTimer(new Date(activeTask.endTime).getTime());
+    createFloatingTimer(new Date(activeTask.endTime).getTime(), activeTask.name);
   }
 });
 
-function createFloatingTimer(targetEndTime) {
+function createFloatingTimer(targetEndTime, taskName) {
   // Cegah duplikasi timer jika sudah ada
   if (document.getElementById('autoSubmitTimerBox')) return;
 
@@ -67,7 +65,7 @@ function createFloatingTimer(targetEndTime) {
     if (distance <= 0) {
       clearInterval(interval);
       display.innerText = "00:00:00";
-      triggerSubmit();
+      triggerSubmit(taskName);
       return;
     }
 
@@ -87,7 +85,7 @@ function createFloatingTimer(targetEndTime) {
   });
 }
 
-function triggerSubmit() {
+function triggerSubmit(taskName) {
   // Strategi 1: Cari berdasarkan atribut khusus Microsoft Forms
   let submitBtn = document.querySelector('button[data-automation-id="submitButton"]');
 
@@ -105,6 +103,13 @@ function triggerSubmit() {
   if (submitBtn) {
     submitBtn.click();
     console.log("Auto-submit berhasil dieksekusi!");
+
+    // Eksekusi pembersihan otomatis (Auto-Delete data setelah submit)
+    if (taskName) {
+      chrome.runtime.sendMessage({ action: "cleanupTask", taskName: taskName }, (response) => {
+        console.log("Cleanup status:", response);
+      });
+    }
   } else {
     console.log("Tombol submit tidak ditemukan.");
   }
