@@ -84,9 +84,9 @@ function executeAutofill(rules) {
   });
 }
 
-// Handler Tipe Teks (Diperbaiki dengan React Native Input Setter)
+// Handler Tipe Teks (Menggunakan selector spesifik data-automation-id="textInput")
 function fillTextInput(block, value) {
-  const inputEl = block.querySelector('input[type="text"], textarea');
+  const inputEl = block.querySelector('input[data-automation-id="textInput"], textarea');
   if (inputEl) {
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
     const nativeTextareaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
@@ -134,7 +134,7 @@ function fillDateInput(block, value) {
     dateVal = `${mm}/${dd}/${yyyy}`;
   }
 
-  const dateInput = block.querySelector('input[type="date"], input[type="text"], input[placeholder*="YYYY"], input[placeholder*="yyyy"], input[placeholder*="M"]');
+  const dateInput = block.querySelector('input[data-automation-id="textInput"], input[type="date"], input[type="text"]');
   if (dateInput) {
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
     if (nativeInputValueSetter) {
