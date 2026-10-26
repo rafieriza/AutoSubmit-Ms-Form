@@ -121,22 +121,21 @@ function fillChoiceInput(block, targetValue) {
   });
 }
 
-// Handler Tipe Tanggal (Mendukung format MM/DD/YYYY dan tag <now>)
+// Handler Tipe Tanggal (Format: tanggal/bulan/tahun atau DD/MM/YYYY)
 function fillDateInput(block, value) {
   let dateVal = value;
   
   if (value.toLowerCase() === "<now>") {
     const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');     // Tanggal (DD)
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Bulan (MM)
+    const yyyy = today.getFullYear();                         // Tahun (YYYY)
     
+    // Format DD/MM/YYYY (tanggal/bulan/tahun)
     dateVal = `${mm}/${dd}/${yyyy}`;
   }
 
-  // Mengincar elemen input di dalam blok tanggal (tanpa memicu tombol lain)
-  const dateInput = block.querySelector('input');
-  
+  const dateInput = block.querySelector('input[type="date"], input[type="text"], input[placeholder*="YYYY"], input[placeholder*="yyyy"], input[placeholder*="date"]');
   if (dateInput) {
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
     if (nativeInputValueSetter) {
