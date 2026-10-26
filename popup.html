@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>AutoSubmit Ms Form</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h2>AutoSubmit Ms Form</h2>
+    
+    <!-- Halaman Home (Form Input Manual) -->
+    <div id="homeView" class="view-section">
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="formName" placeholder="Masukkan nama tugas">
+      </div>
+
+      <div class="form-group">
+        <label>Form Link</label>
+        <input type="text" id="formUrl" placeholder="https://forms.cloud.microsoft/...">
+      </div>
+
+      <div class="form-group">
+        <label>Start Time</label>
+        <input type="datetime-local" id="startTime">
+      </div>
+
+      <div class="form-group">
+        <label>End Time</label>
+        <input type="datetime-local" id="endTime">
+      </div>
+
+      <div class="action-buttons">
+        <button id="submitBtn" class="btn-primary">SUBMIT</button>
+        <button id="resetBtn" class="btn-secondary">RESET</button>
+      </div>
+    </div>
+
+    <!-- Halaman Alarms (Daftar Tugas yang Tersimpan) -->
+    <div id="alarmsView" class="view-section" style="display: none;">
+      <div id="alarmList" class="alarm-list">
+        <!-- Daftar alarm akan muncul di sini secara dinamis -->
+        <p class="no-alarm">Belum ada alarm tersimpan.</p>
+      </div>
+    </div>
+
+    <!-- Navigasi Bawah -->
+    <div class="footer-nav">
+      <div class="nav-item active" id="navHome">
+        <span>🏠</span>
+        <p>Home</p>
+      </div>
+      <div class="nav-item" id="navAlarms">
+        <span>⏰</span>
+        <p>Alarms</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
