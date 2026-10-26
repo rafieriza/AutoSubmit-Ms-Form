@@ -121,17 +121,17 @@ function fillChoiceInput(block, targetValue) {
   });
 }
 
-// Handler Tipe Tanggal (Format: tanggal/bulan/tahun atau DD/MM/YYYY)
+// Handler Tipe Tanggal (Format: bulan/tanggal/tahun atau mm/dd/YYYY)
 function fillDateInput(block, value) {
   let dateVal = value;
   
-  if (value.toLowerCase() === "<now>") {
+  if (value.toLowerCase() === "today") {
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');     // Tanggal (DD)
     const mm = String(today.getMonth() + 1).padStart(2, '0'); // Bulan (MM)
     const yyyy = today.getFullYear();                         // Tahun (YYYY)
     
-    // Format DD/MM/YYYY (tanggal/bulan/tahun)
+    // Format MM/DD/YYYY (bulan/tanggal/tahun)
     dateVal = `${mm}/${dd}/${yyyy}`;
   }
 
