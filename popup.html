@@ -3,58 +3,193 @@
 <head>
   <meta charset="UTF-8">
   <title>AutoSubmit Ms Form</title>
-  <link rel="stylesheet" href="popup.css">
+  <style>
+    body {
+      width: 380px;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+    }
+    header {
+      background: #0078d4;
+      color: white;
+      padding: 12px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 15px;
+    }
+    /* Navigasi Tab */
+    .tab-bar {
+      display: flex;
+      background: #ffffff;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+      color: #555;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      color: #0078d4;
+      border-bottom: 3px solid #0078d4;
+      background: #f9fbff;
+    }
+    /* Konten Tab */
+    .tab-content {
+      display: none;
+      padding: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    /* Form & Input Styling */
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #444;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    button.primary-btn {
+      width: 100%;
+      background: #0078d4;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    button.primary-btn:hover {
+      background: #106ebe;
+    }
+    /* Kartu List Project & Alarm */
+    .card {
+      background: white;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #e1dfdd;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-info {
+      font-size: 12px;
+    }
+    .card-title {
+      font-weight: bold;
+      color: #0078d4;
+    }
+    button.danger-btn {
+      background: #d9534f;
+      color: white;
+      border: none;
+      padding: 5px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    /* Rule Item di dalam Editor Project */
+    .rule-row {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h2>AutoSubmit Ms Form</h2>
-    
-    <!-- Halaman Home (Form Input Manual) -->
-    <div id="homeView" class="view-section">
-      <div class="form-group">
-        <label>Name</label>
-        <input type="text" id="formName" placeholder="Masukkan nama tugas">
-      </div>
 
-      <div class="form-group">
-        <label>Form Link</label>
-        <input type="text" id="formUrl" placeholder="https://forms.cloud.microsoft/...">
-      </div>
+  <header>AutoSubmit & Autofill Ms Form</header>
 
-      <div class="form-group">
-        <label>Start Time</label>
-        <input type="datetime-local" id="startTime">
-      </div>
+  <!-- Navigasi 3 Tab -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('home')">Home</button>
+    <button class="tab-btn" onclick="switchTab('projects')">Projects</button>
+    <button class="tab-btn" onclick="switchTab('alarms')">Alarms</button>
+  </div>
 
-      <div class="form-group">
-        <label>End Time</label>
-        <input type="datetime-local" id="endTime">
-      </div>
+  <!-- TAB 1: HOME (Jadwal & Auto-Submit) -->
+  <div id="tab-home" class="tab-content active">
+    <div class="form-group">
+      <label>Nama Tugas / Sesi:</label>
+      <input type="text" id="taskName" placeholder="Contoh: Absensi Pagi">
+    </div>
+    <div class="form-group">
+      <label>Link Microsoft Forms:</label>
+      <input type="text" id="formUrl" placeholder="https://forms.cloud.microsoft/...">
+    </div>
+    <div class="form-group">
+      <label>Pilih Project Autofill:</label>
+      <select id="selectedProject">
+        <option value="">-- Tanpa Autofill (Manual) --</option>
+        <!-- Daftar project akan dimuat otomatis via JavaScript -->
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Waktu Mulai (Start Time):</label>
+      <input type="datetime-local" id="startTime">
+    </div>
+    <div class="form-group">
+      <label>Waktu Selesai & Submit (End Time):</label>
+      <input type="datetime-local" id="endTime">
+    </div>
+    <button class="primary-btn" id="saveTaskBtn">Simpan Jadwal</button>
+  </div>
 
-      <div class="action-buttons">
-        <button id="submitBtn" class="btn-primary">SUBMIT</button>
-        <button id="resetBtn" class="btn-secondary">RESET</button>
+  <!-- TAB 2: PROJECTS (Manajemen Data Autofill) -->
+  <div id="tab-projects" class="tab-content">
+    <div id="projectListView">
+      <button class="primary-btn" id="newProjectBtn" style="margin-bottom: 10px;">+ Buat Project Baru</button>
+      <div id="projectContainer">
+        <!-- List daftar project akan muncul di sini -->
       </div>
     </div>
 
-    <!-- Halaman Alarms (Daftar Tugas yang Tersimpan) -->
-    <div id="alarmsView" class="view-section" style="display: none;">
-      <div id="alarmList" class="alarm-list">
-        <!-- Daftar alarm akan muncul di sini secara dinamis -->
-        <p class="no-alarm">Belum ada alarm tersimpan.</p>
+    <!-- Tampilan Editor Detail Project (Hidden secara default) -->
+    <div id="projectEditorView" style="display: none;">
+      <button onclick="backToProjectList()" style="background:none; border:none; color:#0078d4; cursor:pointer; font-weight:bold; margin-bottom: 8px;">&larr; Kembali ke Daftar Project</button>
+      <div class="form-group">
+        <label>Nama Project:</label>
+        <input type="text" id="editProjectName" readonly style="background:#e1dfdd;">
       </div>
+      <label style="margin-top: 10px; margin-bottom: 5px;">Aturan Isian Form (Rules):</label>
+      <div id="rulesContainer">
+        <!-- Baris rules (Choice, Text, Date) akan ditambah di sini -->
+      </div>
+      <button class="primary-btn" id="addRuleBtn" style="background: #2b88d8; margin-top: 5px;">+ Tambah Baris Isian</button>
+      <button class="primary-btn" id="saveProjectBtn" style="background: #107c41; margin-top: 10px;">Simpan Perubahan Project</button>
     </div>
+  </div>
 
-    <!-- Navigasi Bawah -->
-    <div class="footer-nav">
-      <div class="nav-item active" id="navHome">
-        <span>🏠</span>
-        <p>Home</p>
-      </div>
-      <div class="nav-item" id="navAlarms">
-        <span>⏰</span>
-        <p>Alarms</p>
-      </div>
+  <!-- TAB 3: ALARMS (Daftar Tugas Aktif) -->
+  <div id="tab-alarms" class="tab-content">
+    <div id="alarmsListContainer">
+      <!-- Daftar alarm aktif akan dimuat di sini -->
     </div>
   </div>
 
